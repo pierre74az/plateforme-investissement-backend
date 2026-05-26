@@ -5,6 +5,7 @@ import path from 'path'
 import { PrismaClient } from '@prisma/client'
 import authRoutes from './routes/auth.routes'
 import kycRoutes from './routes/kyc.routes'
+import offeringRoutes from './routes/offering.routes'
 
 dotenv.config()
 
@@ -18,17 +19,10 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')))
 
 app.use('/api/auth', authRoutes)
 app.use('/api/kyc', kycRoutes)
+app.use('/api/offerings', offeringRoutes)
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' })
-})
-
-app.get('/api/offerings', async (req, res) => {
-  const offerings = await prisma.offering.findMany({
-    where: { isOpen: true },
-    orderBy: { createdAt: 'desc' },
-  })
-  res.json(offerings)
 })
 
 app.listen(PORT, () => {
