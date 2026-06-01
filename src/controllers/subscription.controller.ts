@@ -35,7 +35,7 @@ export const subscribe = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Solde insuffisant' })
     }
 
-    const [subscription] = await prisma.$transaction([
+    const [subscription, updatedUser] = await prisma.$transaction([
       prisma.subscription.create({
         data: { userId, offeringId, shares, totalAmount },
       }),
@@ -51,6 +51,7 @@ export const subscribe = async (req: Request, res: Response) => {
 
     return res.status(201).json({
       subscription,
+      newBalance: updatedUser.balance,
       message: `Souscription réussie — ${shares} actions de ${offering.name}`,
     })
   } catch (error) {

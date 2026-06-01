@@ -59,3 +59,13 @@ export const updateOffering = async (req: Request, res: Response) => {
     return res.status(500).json({ error: 'Erreur serveur' })
   }
 }
+
+export const deleteOffering = async (req: Request, res: Response) => {
+  try {
+    const id = req.params['id'] as string
+    await prisma.offering.delete({ where: { id } })
+    return res.json({ message: 'Offre supprimée' })
+  } catch {
+    return res.status(500).json({ error: 'Erreur serveur' })
+  }
+}

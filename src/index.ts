@@ -7,6 +7,7 @@ import authRoutes from './routes/auth.routes'
 import kycRoutes from './routes/kyc.routes'
 import offeringRoutes from './routes/offering.routes'
 import subscriptionRoutes from './routes/subscription.routes'
+import userRoutes from './routes/user.routes'
 
 dotenv.config()
 
@@ -22,6 +23,7 @@ app.use('/api/auth', authRoutes)
 app.use('/api/kyc', kycRoutes)
 app.use('/api/offerings', offeringRoutes)
 app.use('/api/subscriptions', subscriptionRoutes)
+app.use('/api/users', userRoutes)
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' })
