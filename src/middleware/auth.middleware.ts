@@ -1,13 +1,11 @@
 import { Request, Response, NextFunction } from 'express'
 import jwt from 'jsonwebtoken'
-
-const JWT_SECRET = process.env.JWT_SECRET || 'secret_dev'
+import { JWT_SECRET } from '../config'
 
 export const requireAuth = (req: Request, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  if (!authHeader || !authHeader.startsWith('Bearer '))
     return res.status(401).json({ error: 'Token manquant' })
-  }
 
   const token = authHeader.split(' ')[1]
   try {
@@ -21,8 +19,7 @@ export const requireAuth = (req: Request, res: Response, next: NextFunction) => 
 }
 
 export const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
-  if ((req as any).userRole !== 'ADMIN') {
+  if ((req as any).userRole !== 'ADMIN')
     return res.status(403).json({ error: 'Accès réservé aux administrateurs' })
-  }
   next()
 }

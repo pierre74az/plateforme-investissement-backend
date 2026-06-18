@@ -1,15 +1,12 @@
 import { Request, Response } from 'express'
-import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import { prisma } from '../lib/prisma'
 
 export const getOfferings = async (req: Request, res: Response) => {
   try {
-    const { sector, risk } = req.query
-    const where: any = { isOpen: true }
+    const { sector, risk, includeClosed } = req.query
+    const where: any = includeClosed === 'true' ? {} : { isOpen: true }
     if (sector) where.sector = sector
     if (risk) where.riskLevel = risk
-
     const offerings = await prisma.offering.findMany({
       where,
       orderBy: { createdAt: 'desc' },
@@ -50,10 +47,7 @@ export const createOffering = async (req: Request, res: Response) => {
 export const updateOffering = async (req: Request, res: Response) => {
   try {
     const id = req.params['id'] as string
-    const offering = await prisma.offering.update({
-      where: { id },
-      data: req.body,
-    })
+    const offering = await prisma.offering.update({ where: { id }, data: req.body })
     return res.json(offering)
   } catch {
     return res.status(500).json({ error: 'Erreur serveur' })

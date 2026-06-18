@@ -1,26 +1,33 @@
 import { Request, Response } from 'express'
-import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import { prisma } from '../lib/prisma'
 
 export const getAllUsers = async (req: Request, res: Response) => {
   try {
-    const users = await prisma.user.findMany({
-      where: { role: 'INVESTOR' },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        role: true,
-        kycStatus: true,
-        balance: true,
-        createdAt: true,
-        _count: { select: { subs: true } }
-      },
-      orderBy: { createdAt: 'desc' },
-    })
-    return res.json(users)
+    const page = parseInt(req.query.page as string) || 1
+    const limit = parseInt(req.query.limit as string) || 20
+    const skip = (page - 1) * limit
+    const search = req.query.search as string
+
+    const where: any = { role: 'INVESTOR' }
+    if (search) {
+      where.OR = [
+        { firstName: { contains: search, mode: 'insensitive' } },
+        { lastName: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+      ]
+    }
+
+    const [users, total] = await prisma.$transaction([
+      prisma.user.findMany({
+        where,
+        select: { id: true, email: true, firstName: true, lastName: true, role: true, kycStatus: true, balance: true, createdAt: true, _count: { select: { subs: true } } },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      prisma.user.count({ where }),
+    ])
+    return res.json({ data: users, total, page, pages: Math.ceil(total / limit) })
   } catch {
     return res.status(500).json({ error: 'Erreur serveur' })
   }
@@ -32,19 +39,9 @@ export const getUserById = async (req: Request, res: Response) => {
     const user = await prisma.user.findUnique({
       where: { id },
       select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        role: true,
-        kycStatus: true,
-        balance: true,
-        createdAt: true,
-        kycDoc: true,
-        subs: {
-          include: { offering: { select: { name: true, sector: true } } },
-          orderBy: { createdAt: 'desc' },
-        }
+        id: true, email: true, firstName: true, lastName: true, role: true,
+        kycStatus: true, balance: true, createdAt: true, kycDoc: true,
+        subs: { include: { offering: { select: { name: true, sector: true } } }, orderBy: { createdAt: 'desc' } }
       },
     })
     if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' })
@@ -58,10 +55,7 @@ export const updateUser = async (req: Request, res: Response) => {
   try {
     const id = req.params['id'] as string
     const { firstName, lastName, kycStatus, balance } = req.body
-    const user = await prisma.user.update({
-      where: { id },
-      data: { firstName, lastName, kycStatus, balance },
-    })
+    const user = await prisma.user.update({ where: { id }, data: { firstName, lastName, kycStatus, balance } })
     return res.json(user)
   } catch {
     return res.status(500).json({ error: 'Erreur serveur' })
@@ -76,12 +70,7 @@ export const getStats = async (req: Request, res: Response) => {
       prisma.subscription.aggregate({ _sum: { totalAmount: true }, _count: true }),
       prisma.offering.count({ where: { isOpen: true } }),
     ])
-
-    const kycStats = kycs.reduce((acc: any, k) => {
-      acc[k.status] = k._count
-      return acc
-    }, {})
-
+    const kycStats = kycs.reduce((acc: any, k) => { acc[k.status] = k._count; return acc }, {})
     return res.json({
       totalInvestors: users,
       kycPending: kycStats['PENDING'] || 0,
@@ -103,10 +92,7 @@ export const updateMyProfile = async (req: Request, res: Response) => {
     const user = await prisma.user.update({
       where: { id: userId },
       data: { firstName, lastName },
-      select: {
-        id: true, email: true, firstName: true,
-        lastName: true, role: true, kycStatus: true, balance: true,
-      },
+      select: { id: true, email: true, firstName: true, lastName: true, role: true, kycStatus: true, balance: true },
     })
     return res.json(user)
   } catch {
