@@ -44,10 +44,27 @@ export const createOffering = async (req: Request, res: Response) => {
   }
 }
 
+// Liste blanche des champs modifiables — empêche le mass assignment
+// (ex: soldShares ou createdAt ne peuvent pas être manipulés via cette route)
+const UPDATABLE_FIELDS = [
+  'name', 'sector', 'pricePerShare', 'totalShares',
+  'minInvest', 'description', 'riskLevel', 'isOpen',
+] as const
+
 export const updateOffering = async (req: Request, res: Response) => {
   try {
     const id = req.params['id'] as string
-    const offering = await prisma.offering.update({ where: { id }, data: req.body })
+    const data: Record<string, any> = {}
+
+    for (const field of UPDATABLE_FIELDS) {
+      if (req.body[field] !== undefined) data[field] = req.body[field]
+    }
+
+    if (Object.keys(data).length === 0) {
+      return res.status(400).json({ error: 'Aucun champ valide à mettre à jour' })
+    }
+
+    const offering = await prisma.offering.update({ where: { id }, data })
     return res.json(offering)
   } catch {
     return res.status(500).json({ error: 'Erreur serveur' })

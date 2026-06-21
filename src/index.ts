@@ -6,6 +6,7 @@ import helmet from 'helmet'
 import rateLimit from 'express-rate-limit'
 import { PORT, NODE_ENV, FRONTEND_URL } from './config'
 import authRoutes from './routes/auth.routes'
+import { requireAuthForUploads } from './middleware/uploads.middleware'
 import kycRoutes from './routes/kyc.routes'
 import offeringRoutes from './routes/offering.routes'
 import subscriptionRoutes from './routes/subscription.routes'
@@ -30,7 +31,7 @@ const authLimiter = rateLimit({
   standardHeaders: true, legacyHeaders: false,
 })
 
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')))
+app.use('/uploads', requireAuthForUploads, express.static(path.join(__dirname, '../uploads')))
 
 app.use('/api/auth', authLimiter, authRoutes)
 app.use('/api/kyc', kycRoutes)
