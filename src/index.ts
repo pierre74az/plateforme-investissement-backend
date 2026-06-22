@@ -11,11 +11,18 @@ import kycRoutes from './routes/kyc.routes'
 import offeringRoutes from './routes/offering.routes'
 import subscriptionRoutes from './routes/subscription.routes'
 import userRoutes from './routes/user.routes'
+import paymentRoutes from './routes/payment.routes'
+import { handleStripeWebhook } from './controllers/webhook.controller'
 
 const app = express()
 
 app.use(helmet({ crossOriginResourcePolicy: false, contentSecurityPolicy: false }))
 app.use(cors({ origin: FRONTEND_URL }))
+
+// Webhook Stripe — DOIT être déclaré AVANT express.json() car Stripe a besoin du body brut
+// pour vérifier la signature cryptographique de la requête
+app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), handleStripeWebhook)
+
 app.use(express.json({ limit: '10mb' }))
 
 const globalLimiter = rateLimit({
@@ -38,6 +45,7 @@ app.use('/api/kyc', kycRoutes)
 app.use('/api/offerings', offeringRoutes)
 app.use('/api/subscriptions', subscriptionRoutes)
 app.use('/api/users', userRoutes)
+app.use('/api/payments', paymentRoutes)
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString(), env: NODE_ENV })

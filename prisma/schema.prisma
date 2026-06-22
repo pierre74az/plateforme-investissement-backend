@@ -25,7 +25,7 @@ model User {
   firstName String
   lastName  String
   role      Role         @default(INVESTOR)
-  balance   Float        @default(10000)
+  balance   Float        @default(0)
   kycStatus KycStatus    @default(PENDING)
   createdAt DateTime     @default(now())
   kycDoc    KycDocument?

@@ -9,6 +9,7 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "sourceMap": true,
+    "forceConsistentCasingInFileNames": true,
     "types": ["node"]
   },
   "include": ["src/**/*"],
