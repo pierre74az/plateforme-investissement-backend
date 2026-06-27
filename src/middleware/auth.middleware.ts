@@ -9,9 +9,9 @@ export const requireAuth = (req: Request, res: Response, next: NextFunction) => 
 
   const token = authHeader.split(' ')[1]
   try {
-    const payload = jwt.verify(token, JWT_SECRET) as any
-    ;(req as any).userId = payload.userId
-    ;(req as any).userRole = payload.role
+    const payload = jwt.verify(token, JWT_SECRET) as { userId: string; role: string }
+    req.userId = payload.userId
+    req.userRole = payload.role
     next()
   } catch {
     return res.status(401).json({ error: 'Token invalide ou expiré' })
@@ -19,7 +19,7 @@ export const requireAuth = (req: Request, res: Response, next: NextFunction) => 
 }
 
 export const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
-  if ((req as any).userRole !== 'ADMIN')
+  if (req.userRole !== 'ADMIN')
     return res.status(403).json({ error: 'Accès réservé aux administrateurs' })
   next()
 }

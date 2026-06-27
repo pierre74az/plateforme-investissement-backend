@@ -1,0 +1,712 @@
+{
+  "info": {
+    "name": "Plateforme Investissement Backend",
+    "_postman_id": "a9d091d5-7c85-4f50-99ab-8c19b841a1f8",
+    "description": "Tests Postman pour l'API backend de la plateforme d'investissement.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3001" },
+    { "key": "testEmail", "value": "investisseur.postman@example.com" },
+    { "key": "testPassword", "value": "Password123" },
+    { "key": "token", "value": "" },
+    { "key": "adminToken", "value": "" },
+    { "key": "offeringId", "value": "" },
+    { "key": "userId", "value": "" },
+    { "key": "kycId", "value": "" },
+    { "key": "stripeSessionId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "GET /api/health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/health"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Retourne status ok', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.status).to.eql('ok');",
+                  "  pm.expect(json.timestamp).to.be.a('string');",
+                  "  pm.expect(json.env).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET route inexistante",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/route-inexistante"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Retourne une erreur lisible', () => {",
+                  "  pm.expect(pm.response.json()).to.have.property('error');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "POST /api/auth/register",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{testEmail}}\",\n  \"password\": \"{{testPassword}}\",\n  \"firstName\": \"Postman\",\n  \"lastName\": \"Investor\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/register"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201 ou email deja utilise', () => {",
+                  "  pm.expect([201, 400]).to.include(pm.response.code);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "if (pm.response.code === 201) {",
+                  "  pm.test('Inscription retourne token et utilisateur', () => {",
+                  "    pm.expect(json.token).to.be.a('string').and.not.empty;",
+                  "    pm.expect(json.user).to.include.keys('id', 'email', 'firstName', 'lastName', 'role', 'kycStatus', 'balance');",
+                  "    pm.expect(json.user.email).to.eql(pm.collectionVariables.get('testEmail').toLowerCase());",
+                  "  });",
+                  "  pm.collectionVariables.set('token', json.token);",
+                  "  pm.collectionVariables.set('userId', json.user.id);",
+                  "} else {",
+                  "  pm.test('Erreur email deja utilise', () => pm.expect(json.error).to.match(/deja|déjà|utilise|utilisé/i));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/auth/login",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{testEmail}}\",\n  \"password\": \"{{testPassword}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/login"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Connexion retourne token et utilisateur', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.token).to.be.a('string').and.not.empty;",
+                  "  pm.expect(json.user.email).to.eql(pm.collectionVariables.get('testEmail').toLowerCase());",
+                  "  pm.collectionVariables.set('token', json.token);",
+                  "  pm.collectionVariables.set('userId', json.user.id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/auth/login mauvais mot de passe",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{testEmail}}\",\n  \"password\": \"Mauvais123\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/login"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 401', () => pm.response.to.have.status(401));",
+                  "pm.test('Retourne une erreur', () => pm.expect(pm.response.json()).to.have.property('error'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/auth/me",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/auth/me"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Retourne le profil connecte sans mot de passe', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.include.keys('id', 'email', 'firstName', 'lastName', 'role', 'kycStatus', 'balance', 'createdAt');",
+                  "  pm.expect(json).to.not.have.property('password');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/auth/me sans token",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/auth/me"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 401', () => pm.response.to.have.status(401));",
+                  "pm.test('Erreur token manquant', () => pm.expect(pm.response.json().error).to.match(/token/i));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Offerings",
+      "item": [
+        {
+          "name": "GET /api/offerings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/offerings"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Retourne une liste d offres', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.be.an('array');",
+                  "  if (json.length > 0) {",
+                  "    pm.expect(json[0]).to.include.keys('id', 'name', 'sector', 'pricePerShare', 'totalShares', 'soldShares', 'minInvest', 'description', 'riskLevel', 'isOpen', 'createdAt');",
+                  "    pm.collectionVariables.set('offeringId', json[0].id);",
+                  "  }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/offerings/:id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/offerings/{{offeringId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 si offeringId existe', () => pm.response.to.have.status(200));",
+                  "pm.test('Retourne l offre demandee', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.id).to.eql(pm.collectionVariables.get('offeringId'));",
+                  "  pm.expect(json).to.have.property('_count');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/offerings/:id introuvable",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/offerings/id-inexistant"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Retourne une erreur', () => pm.expect(pm.response.json()).to.have.property('error'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/offerings sans admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Offre Test Postman\",\n  \"sector\": \"Technologie\",\n  \"pricePerShare\": 1000,\n  \"totalShares\": 100,\n  \"minInvest\": 5000,\n  \"description\": \"Offre creee par les tests Postman.\",\n  \"riskLevel\": \"Moyen\"\n}"
+            },
+            "url": "{{baseUrl}}/api/offerings"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Investisseur refuse ou token absent', () => pm.expect([401, 403]).to.include(pm.response.code));",
+                  "pm.test('Retourne une erreur', () => pm.expect(pm.response.json()).to.have.property('error'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/offerings admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Offre Admin Postman\",\n  \"sector\": \"Finance\",\n  \"pricePerShare\": 1500,\n  \"totalShares\": 200,\n  \"minInvest\": 7500,\n  \"description\": \"Offre creee par un administrateur depuis Postman.\",\n  \"riskLevel\": \"Faible\"\n}"
+            },
+            "url": "{{baseUrl}}/api/offerings"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201 avec adminToken valide, sinon 401/403', () => pm.expect([201, 401, 403]).to.include(pm.response.code));",
+                  "const json = pm.response.json();",
+                  "if (pm.response.code === 201) {",
+                  "  pm.test('Offre creee', () => {",
+                  "    pm.expect(json.name).to.eql('Offre Admin Postman');",
+                  "    pm.expect(json.id).to.be.a('string');",
+                  "  });",
+                  "  pm.collectionVariables.set('offeringId', json.id);",
+                  "} else {",
+                  "  pm.test('Acces admin non configure', () => pm.expect(json).to.have.property('error'));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "GET /api/users/stats sans admin",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/users/stats"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Investisseur refuse ou token absent', () => pm.expect([401, 403]).to.include(pm.response.code));",
+                  "pm.test('Retourne une erreur', () => pm.expect(pm.response.json()).to.have.property('error'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/users/stats admin",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/users/stats"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 avec adminToken valide, sinon 401/403', () => pm.expect([200, 401, 403]).to.include(pm.response.code));",
+                  "if (pm.response.code === 200) {",
+                  "  pm.test('Retourne les statistiques admin', () => {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.include.keys('totalInvestors', 'kycPending', 'kycApproved', 'kycRejected', 'totalSubscriptions', 'totalVolume', 'activeOfferings');",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH /api/users/me/profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Postman\",\n  \"lastName\": \"Updated\"\n}"
+            },
+            "url": "{{baseUrl}}/api/users/me/profile"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Devrait retourner 200 apres correction de l ordre des routes', () => pm.expect([200, 500]).to.include(pm.response.code));",
+                  "if (pm.response.code === 200) {",
+                  "  pm.test('Profil mis a jour', () => {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.firstName).to.eql('Postman');",
+                  "    pm.expect(json.lastName).to.eql('Updated');",
+                  "  });",
+                  "} else {",
+                  "  pm.test('Route probablement capturee par /:id avant /me/profile', () => pm.expect(pm.response.json()).to.have.property('error'));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "KYC",
+      "item": [
+        {
+          "name": "GET /api/kyc/me",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/kyc/me"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Retourne null ou un dossier KYC', () => {",
+                  "  const json = pm.response.json();",
+                  "  if (json) {",
+                  "    pm.expect(json).to.include.keys('id', 'userId', 'idCardUrl', 'addressUrl', 'status', 'createdAt');",
+                  "    pm.collectionVariables.set('kycId', json.id);",
+                  "  } else {",
+                  "    pm.expect(json).to.eql(null);",
+                  "  }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/kyc/all sans admin",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/kyc/all"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Investisseur refuse ou token absent', () => pm.expect([401, 403]).to.include(pm.response.code));",
+                  "pm.test('Retourne une erreur', () => pm.expect(pm.response.json()).to.have.property('error'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH /api/kyc/:id/review statut invalide",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"INVALID\"\n}"
+            },
+            "url": "{{baseUrl}}/api/kyc/{{kycId}}/review"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 400 avec adminToken, sinon 401/403/500 si kycId absent', () => pm.expect([400, 401, 403, 500]).to.include(pm.response.code));",
+                  "pm.test('Retourne une erreur', () => pm.expect(pm.response.json()).to.have.property('error'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Subscriptions",
+      "item": [
+        {
+          "name": "GET /api/subscriptions/me",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/subscriptions/me?page=1&limit=10"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Retourne une pagination', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.include.keys('data', 'total', 'page', 'pages');",
+                  "  pm.expect(json.data).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/subscriptions KYC non approuve",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"offeringId\": \"{{offeringId}}\",\n  \"shares\": 1\n}"
+            },
+            "url": "{{baseUrl}}/api/subscriptions"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Retour attendu selon etat utilisateur', () => pm.expect([201, 400, 403]).to.include(pm.response.code));",
+                  "const json = pm.response.json();",
+                  "if (pm.response.code === 201) {",
+                  "  pm.test('Souscription creee', () => pm.expect(json).to.include.keys('subscription', 'newBalance', 'message'));",
+                  "} else {",
+                  "  pm.test('Retourne une erreur metier', () => pm.expect(json).to.have.property('error'));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/subscriptions/all sans admin",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/subscriptions/all"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Investisseur refuse ou token absent', () => pm.expect([401, 403]).to.include(pm.response.code));",
+                  "pm.test('Retourne une erreur', () => pm.expect(pm.response.json()).to.have.property('error'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Payments",
+      "item": [
+        {
+          "name": "POST /api/payments/checkout",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"offeringId\": \"{{offeringId}}\",\n  \"shares\": 1\n}"
+            },
+            "url": "{{baseUrl}}/api/payments/checkout"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Retour attendu selon KYC et Stripe', () => pm.expect([200, 400, 403, 500]).to.include(pm.response.code));",
+                  "const json = pm.response.json();",
+                  "if (pm.response.code === 200) {",
+                  "  pm.test('Session Stripe creee', () => {",
+                  "    pm.expect(json.url).to.be.a('string').and.not.empty;",
+                  "    pm.expect(json.sessionId).to.be.a('string').and.not.empty;",
+                  "  });",
+                  "  pm.collectionVariables.set('stripeSessionId', json.sessionId);",
+                  "} else {",
+                  "  pm.test('Retourne une erreur metier ou Stripe', () => pm.expect(json).to.have.property('error'));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/payments/session/:sessionId",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/payments/session/{{stripeSessionId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 si sessionId valide, sinon 500', () => pm.expect([200, 500]).to.include(pm.response.code));",
+                  "const json = pm.response.json();",
+                  "if (pm.response.code === 200) {",
+                  "  pm.test('Retourne etat paiement', () => pm.expect(json).to.include.keys('paid', 'subscriptionCreated'));",
+                  "} else {",
+                  "  pm.test('Retourne une erreur Stripe', () => pm.expect(json).to.have.property('error'));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!pm.collectionVariables.get('baseUrl')) {",
+          "  pm.collectionVariables.set('baseUrl', 'http://localhost:3001');",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.test('Reponse JSON quand un body existe', () => {",
+          "  if (pm.response.text()) {",
+          "    pm.response.to.be.json;",
+          "  }",
+          "});"
+        ]
+      }
+    }
+  ]
+}

@@ -6,8 +6,8 @@ const router = Router()
 
 router.get('/stats', requireAuth, requireAdmin, getStats)
 router.get('/', requireAuth, requireAdmin, getAllUsers)
+router.patch('/me/profile', requireAuth, updateMyProfile)
 router.get('/:id', requireAuth, requireAdmin, getUserById)
 router.patch('/:id', requireAuth, requireAdmin, updateUser)
-router.patch('/me/profile', requireAuth, updateMyProfile)
 
 export default router

@@ -64,6 +64,7 @@ model Subscription {
   offeringId  String
   offering    Offering @relation(fields: [offeringId], references: [id])
   shares      Int
-  totalAmount Float
+  totalAmount    Float
+  stripeSessionId String?  @unique
   createdAt   DateTime @default(now())
 }
