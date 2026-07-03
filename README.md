@@ -16,6 +16,48 @@ Ce dépôt héberge l'API REST robuste et sécurisée de la plateforme d'investi
 
 ---
 
+## 📁 Structure du Projet
+
+```text
+plateforme-investissement-backend/
+├── prisma/
+│   ├── migrations/         # Historique des migrations SQL de la base
+│   ├── schema.prisma       # Définition des modèles de données Prisma (PostgreSQL)
+│   └── seed.ts             # Script de population (Admin + 20 Offres d'exemples)
+├── src/
+│   ├── controllers/        # Contrôleurs contenant la logique métier
+│   │   ├── auth.controller.ts         # Inscription, connexion (Bcrypt.js, JWT)
+│   │   ├── kyc.controller.ts          # Soumission & validation administrative
+│   │   ├── offering.controller.ts     # Offres d'investissement
+│   │   ├── payment.controller.ts      # Création des sessions Stripe Checkout
+│   │   ├── subscription.controller.ts # Souscriptions investisseurs
+│   │   ├── user.controller.ts         # Profils & gestion des utilisateurs
+│   │   └── webhook.controller.ts      # Webhook de confirmation Stripe
+│   ├── lib/                # Fichiers de configuration des clients tiers
+│   │   ├── prisma.ts       # Instance unique globale du Prisma Client
+│   │   └── stripe.ts       # Configuration & initialisation Stripe SDK
+│   ├── middleware/         # Middlewares Express réutilisables
+│   │   ├── auth.middleware.ts         # Guard de vérification du JWT
+│   │   ├── security.middleware.ts     # Configuration Helmet & Rate-Limiter
+│   │   └── uploads.middleware.ts      # Gestion de l'upload des pièces KYC (Multer)
+│   ├── routes/             # Définition des points d'accès (routes) HTTP
+│   │   ├── auth.routes.ts
+│   │   ├── kyc.routes.ts
+│   │   ├── offering.routes.ts
+│   │   ├── payment.routes.ts
+│   │   ├── subscription.routes.ts
+│   │   └── user.routes.ts
+│   ├── types/              # Déclarations & extensions de types TypeScript
+│   │   └── express.d.ts    # Ajout du paramètre `userId` à l'objet Request d'Express
+│   ├── config.ts           # Variables d'environnement & configuration globale
+│   └── index.ts            # Point d'entrée de l'application (Démarrage du serveur)
+├── uploads/                # Stockage local temporaire des fichiers KYC
+├── tsconfig.json           # Configuration du compilateur TypeScript
+└── package.json            # Scripts de build, dépendances et metadata npm
+```
+
+---
+
 ## 🗄️ Architecture des Données (Prisma Schema)
 
 L'API s'articule autour de 4 entités principales :
