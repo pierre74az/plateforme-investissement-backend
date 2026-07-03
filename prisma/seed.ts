@@ -5,7 +5,10 @@ const prisma = new PrismaClient()
 
 async function main() {
   // ─── 1. Compte ADMIN ────────────────────────────────────────────────────────
-  const adminPassword = await bcrypt.hash('Admin1234!', 10)
+  const adminPassword = await bcrypt.hash(
+    process.env.ADMIN_PASSWORD || 'Admin1234!',
+    10
+  )
 
   await prisma.user.upsert({
     where: { email: 'admin@investbf.com' },
