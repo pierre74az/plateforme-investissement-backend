@@ -19,9 +19,23 @@ import { handleStripeWebhook } from './controllers/webhook.controller'
 
 const app = express()
 
+// ─── CORS ─────────────────────────────────────────────────────────────────────
+// Accepte plusieurs origines : URL prod principale + URLs alternatives Vercel
+const ALLOWED_ORIGINS = [
+  FRONTEND_URL,                          // Variable d'env Render (URL principale)
+  'https://investbf.vercel.app',         // URL courte Vercel
+  'https://investbfplat.vercel.app',     // URL complète Vercel
+  'http://localhost:3000',               // Développement local
+].filter(Boolean)
+
 app.use(helmet({ crossOriginResourcePolicy: false, contentSecurityPolicy: false }))
 app.use(cors({
-  origin: FRONTEND_URL,
+  origin: (origin, callback) => {
+    // Autoriser les requêtes sans origin (ex: outils API, Postman)
+    if (!origin) return callback(null, true)
+    if (ALLOWED_ORIGINS.includes(origin)) return callback(null, true)
+    callback(new Error(`CORS: origin non autorisé — ${origin}`))
+  },
   credentials: true, // nécessaire pour les cookies HTTP-only (refresh token)
 }))
 
