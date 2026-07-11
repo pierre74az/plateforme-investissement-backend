@@ -34,6 +34,7 @@ export const getOfferingById = async (req: Request, res: Response) => {
 
 export const createOffering = async (req: Request, res: Response) => {
   try {
+    // La validation est assurée par le middleware Zod en amont
     const { name, sector, pricePerShare, totalShares, minInvest, description, riskLevel } = req.body
     const offering = await prisma.offering.create({
       data: { name, sector, pricePerShare, totalShares, minInvest, description, riskLevel },
@@ -56,6 +57,7 @@ export const updateOffering = async (req: Request, res: Response) => {
     const id = req.params['id'] as string
     const data: Record<string, any> = {}
 
+    // Appliquer la liste blanche même si Zod a déjà validé les champs
     for (const field of UPDATABLE_FIELDS) {
       if (req.body[field] !== undefined) data[field] = req.body[field]
     }

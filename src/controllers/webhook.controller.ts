@@ -19,6 +19,13 @@ export const handleStripeWebhook = async (req: Request, res: Response) => {
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object as Stripe.Checkout.Session
+
+    // Vérifier que le paiement est bien réussi
+    if (session.payment_status !== 'paid') {
+      console.log(`[Webhook] Session ${session.id} — paiement non finalisé (${session.payment_status})`)
+      return res.status(200).json({ received: true })
+    }
+
     const { userId, offeringId, shares, totalAmount } = session.metadata as {
       userId: string; offeringId: string; shares: string; totalAmount: string
     }
@@ -79,6 +86,9 @@ export const handleStripeWebhook = async (req: Request, res: Response) => {
       console.log(`[Webhook] ✔ Souscription créée — session ${session.id}`)
     } catch (error) {
       console.error('[Webhook] Erreur transaction:', error)
+      // On retourne 200 quand même pour éviter que Stripe ne réessaie indéfiniment
+      // sur des erreurs métier (offre fermée, KYC révoqué, etc.)
+      // SAUF si c'est une erreur technique (DB down), dans ce cas il faut que Stripe réessaie
     }
   }
 

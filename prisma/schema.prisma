@@ -30,6 +30,7 @@ model User {
   createdAt DateTime     @default(now())
   kycDoc    KycDocument?
   subs      Subscription[]
+  refreshTokens RefreshToken[]
 }
 
 model KycDocument {
@@ -58,13 +59,22 @@ model Offering {
 }
 
 model Subscription {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  offeringId  String
-  offering    Offering @relation(fields: [offeringId], references: [id])
-  shares      Int
-  totalAmount    Float
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  offeringId      String
+  offering        Offering @relation(fields: [offeringId], references: [id])
+  shares          Int
+  totalAmount     Float
   stripeSessionId String?  @unique
-  createdAt   DateTime @default(now())
+  createdAt       DateTime @default(now())
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  expiresAt DateTime
+  createdAt DateTime @default(now())
 }

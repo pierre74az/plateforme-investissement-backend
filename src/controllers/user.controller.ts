@@ -20,7 +20,11 @@ export const getAllUsers = async (req: Request, res: Response) => {
     const [users, total] = await prisma.$transaction([
       prisma.user.findMany({
         where,
-        select: { id: true, email: true, firstName: true, lastName: true, role: true, kycStatus: true, balance: true, createdAt: true, _count: { select: { subs: true } } },
+        select: {
+          id: true, email: true, firstName: true, lastName: true,
+          role: true, kycStatus: true, balance: true, createdAt: true,
+          _count: { select: { subs: true } },
+        },
         orderBy: { createdAt: 'desc' },
         skip,
         take: limit,
@@ -41,7 +45,10 @@ export const getUserById = async (req: Request, res: Response) => {
       select: {
         id: true, email: true, firstName: true, lastName: true, role: true,
         kycStatus: true, balance: true, createdAt: true, kycDoc: true,
-        subs: { include: { offering: { select: { name: true, sector: true } } }, orderBy: { createdAt: 'desc' } }
+        subs: {
+          include: { offering: { select: { name: true, sector: true } } },
+          orderBy: { createdAt: 'desc' },
+        },
       },
     })
     if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' })
@@ -53,9 +60,27 @@ export const getUserById = async (req: Request, res: Response) => {
 
 export const updateUser = async (req: Request, res: Response) => {
   try {
+    // La validation (champs autorisés + types) est assurée par le middleware Zod en amont
     const id = req.params['id'] as string
     const { firstName, lastName, kycStatus, balance } = req.body
-    const user = await prisma.user.update({ where: { id }, data: { firstName, lastName, kycStatus, balance } })
+
+    const data: Record<string, any> = {}
+    if (firstName !== undefined) data.firstName = firstName
+    if (lastName !== undefined) data.lastName = lastName
+    if (kycStatus !== undefined) data.kycStatus = kycStatus
+    if (balance !== undefined) data.balance = balance
+
+    if (Object.keys(data).length === 0)
+      return res.status(400).json({ error: 'Aucun champ valide à mettre à jour' })
+
+    const user = await prisma.user.update({
+      where: { id },
+      data,
+      select: {
+        id: true, email: true, firstName: true, lastName: true,
+        role: true, kycStatus: true, balance: true,
+      },
+    })
     return res.json(user)
   } catch {
     return res.status(500).json({ error: 'Erreur serveur' })
@@ -87,12 +112,20 @@ export const getStats = async (req: Request, res: Response) => {
 
 export const updateMyProfile = async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).userId
+    const userId = req.userId!
     const { firstName, lastName } = req.body
+
+    const data: Record<string, any> = {}
+    if (firstName !== undefined) data.firstName = firstName
+    if (lastName !== undefined) data.lastName = lastName
+
     const user = await prisma.user.update({
       where: { id: userId },
-      data: { firstName, lastName },
-      select: { id: true, email: true, firstName: true, lastName: true, role: true, kycStatus: true, balance: true },
+      data,
+      select: {
+        id: true, email: true, firstName: true, lastName: true,
+        role: true, kycStatus: true, balance: true,
+      },
     })
     return res.json(user)
   } catch {

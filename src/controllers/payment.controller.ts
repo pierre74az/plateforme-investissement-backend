@@ -66,7 +66,7 @@ export const createCheckoutSession = async (req: Request, res: Response) => {
 export const checkPaymentStatus = async (req: Request, res: Response) => {
   try {
     const userId = req.userId!
-    const sessionId = req.params["sessionId"] as string
+    const sessionId = req.params['sessionId'] as string
 
     // Vérifier côté Stripe que la session est bien payée
     const session = await stripe.checkout.sessions.retrieve(sessionId)
@@ -74,12 +74,17 @@ export const checkPaymentStatus = async (req: Request, res: Response) => {
       return res.json({ paid: false, subscriptionCreated: false })
     }
 
-    // Vérifier que la souscription a été créée en base par le webhook
-    const offeringId = session.metadata?.offeringId
+    // CORRECTION : filtrer par stripeSessionId pour éviter les faux positifs
+    // (ex : un utilisateur ayant déjà souscrit à la même offre lors d'un paiement précédent)
     const subscription = await prisma.subscription.findFirst({
-      where: { userId, offeringId: offeringId || '' },
-      orderBy: { createdAt: 'desc' },
+      where: { stripeSessionId: sessionId },
     })
+
+    // Vérification de sécurité : la souscription appartient bien à cet utilisateur
+    if (subscription && subscription.userId !== userId) {
+      console.error(`[PaymentStatus] Session ${sessionId} — userId mismatch`)
+      return res.status(403).json({ error: 'Accès non autorisé' })
+    }
 
     return res.json({
       paid: true,
