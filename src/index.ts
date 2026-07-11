@@ -56,15 +56,9 @@ const globalLimiter = rateLimit({
 })
 app.use('/api/', globalLimiter)
 
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, max: 10,
-  message: { error: 'Trop de tentatives. Réessayez dans 15 minutes.' },
-  standardHeaders: true, legacyHeaders: false,
-})
-
 app.use('/uploads', requireAuthForUploads, express.static(path.join(__dirname, '../uploads')))
 
-app.use('/api/auth', authLimiter, authRoutes)
+app.use('/api/auth', authRoutes)
 app.use('/api/kyc', kycRoutes)
 app.use('/api/offerings', offeringRoutes)
 app.use('/api/subscriptions', subscriptionRoutes)
