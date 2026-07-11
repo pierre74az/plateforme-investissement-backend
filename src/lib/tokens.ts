@@ -28,8 +28,11 @@ export const REFRESH_COOKIE_NAME = 'refreshToken'
 
 export const REFRESH_COOKIE_OPTIONS = {
   httpOnly: true,
+  // En production (Vercel ↔ Render = domaines différents), le cookie doit être
+  // sameSite:'none' + secure:true pour traverser la frontière cross-origin.
+  // En développement local (même origine), on garde 'lax' qui est plus permissif.
   secure: process.env.NODE_ENV === 'production',
-  sameSite: 'strict' as const,
+  sameSite: (process.env.NODE_ENV === 'production' ? 'none' : 'lax') as 'none' | 'lax',
   maxAge: REFRESH_TOKEN_EXPIRY_MS,
   path: '/api/auth',
 }

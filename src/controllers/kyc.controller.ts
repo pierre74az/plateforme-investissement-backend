@@ -3,7 +3,7 @@ import { prisma } from '../lib/prisma'
 
 export const submitKyc = async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).userId
+    const userId = req.userId!
     const files = req.files as { [fieldname: string]: Express.Multer.File[] }
     if (!files?.idCard?.[0] || !files?.addressDoc?.[0])
       return res.status(400).json({ error: 'Les deux documents sont obligatoires' })
@@ -28,7 +28,7 @@ export const submitKyc = async (req: Request, res: Response) => {
 
 export const getMyKyc = async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).userId
+    const userId = req.userId!
     const kyc = await prisma.kycDocument.findUnique({ where: { userId } })
     return res.json(kyc)
   } catch (error) {

@@ -3,7 +3,7 @@ import { prisma } from '../lib/prisma'
 
 export const subscribe = async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).userId
+    const userId = req.userId!
     const { offeringId, shares } = req.body
 
     if (!offeringId || !shares || shares < 1)
@@ -44,7 +44,7 @@ export const subscribe = async (req: Request, res: Response) => {
 
 export const getMySubscriptions = async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).userId
+    const userId = req.userId!
     const page = parseInt(req.query.page as string) || 1
     const limit = parseInt(req.query.limit as string) || 20
     const skip = (page - 1) * limit

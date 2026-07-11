@@ -86,9 +86,9 @@ export const handleStripeWebhook = async (req: Request, res: Response) => {
       console.log(`[Webhook] ✔ Souscription créée — session ${session.id}`)
     } catch (error) {
       console.error('[Webhook] Erreur transaction:', error)
-      // On retourne 200 quand même pour éviter que Stripe ne réessaie indéfiniment
-      // sur des erreurs métier (offre fermée, KYC révoqué, etc.)
-      // SAUF si c'est une erreur technique (DB down), dans ce cas il faut que Stripe réessaie
+      // Retourner 500 pour que Stripe puisse réessayer en cas d'erreur technique (DB down, etc.)
+      // Les erreurs métier (KYC révoqué, offre fermée) ont déjà été traitées au-dessus avec 200.
+      return res.status(500).json({ received: false, error: 'Transaction échouée — Stripe réessaiera' })
     }
   }
 

@@ -29,8 +29,8 @@ export const createOfferingSchema = z.object({
   totalShares: z.number().int().positive('Le nombre total d\'actions doit être un entier positif'),
   minInvest: z.number().positive('Le montant minimum doit être positif'),
   description: z.string().trim().min(10, 'La description doit contenir au moins 10 caractères'),
-  riskLevel: z.enum(['FAIBLE', 'MOYEN', 'ELEVE'], {
-    errorMap: () => ({ message: 'Niveau de risque invalide : FAIBLE, MOYEN ou ELEVE' }),
+  riskLevel: z.enum(['Faible', 'Moyen', 'Élevé'], {
+    errorMap: () => ({ message: 'Niveau de risque invalide : Faible, Moyen ou Élevé' }),
   }),
 })
 
